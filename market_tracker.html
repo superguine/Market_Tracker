@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Market Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&display=swap" rel="stylesheet">
+<style>
+:root{--brown:#3a2314;--red:#a3321f;--psave:#2f5d2a;--doto:"Doto",ui-monospace,Menlo,Consolas,monospace;--bg:#eef1ec;--card:#fff;--ink:#1b2420;--mute:#66726b;--line:#dde3dc;--acc:#1f5c4a;--acc-ink:#fff;--err:#c0392b;--field:#f7f9f6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b2220;--ink:#e8eee9;--mute:#93a099;--line:#2c3532;--acc:#58b894;--acc-ink:#0c1612;--err:#ff7b6b;--field:#161c1a}}
+:root[data-theme="dark"]{--bg:#1b2220;--ink:#e8eee9;--mute:#93a099;--line:#2c3532;--acc:#58b894;--acc-ink:#0c1612;--err:#ff7b6b;--field:#161c1a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--brown);font:700 19px/1.5 var(--doto);background:radial-gradient(ellipse at center,transparent 55%,rgba(90,60,30,.2)),url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%271000%27%20height%3D%271000%27%3E%3Cfilter%20id%3D%27f%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27turbulence%27%20baseFrequency%3D%270.009%200.011%27%20numOctaves%3D%274%27%20seed%3D%2711%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeDiffuseLighting%20surfaceScale%3D%273.5%27%20diffuseConstant%3D%271.15%27%20lighting-color%3D%27%23f6f0e0%27%3E%3CfeDistantLight%20azimuth%3D%27225%27%20elevation%3D%2760%27%2F%3E%3C%2FfeDiffuseLighting%3E%3C%2Ffilter%3E%3Crect%20width%3D%271000%27%20height%3D%271000%27%20filter%3D%27url%28%23f%29%27%2F%3E%3C%2Fsvg%3E") #e9e0cb;background-attachment:fixed;background-size:cover,1000px}
+body:has(dialog[open]){overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+.page{max-width:720px;margin:0 auto;padding:40px 24px 90px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:28px}
+h1{font:800 clamp(34px,6vw,56px)/1 var(--doto);margin:0}
+.link{background:none;border:0;color:var(--brown);font:800 17px var(--doto);text-decoration:underline;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--brown);outline-offset:2px}
+.item{display:grid;grid-template-columns:26px 1fr auto;gap:14px;align-items:start;padding:14px 0;border-top:1px dotted rgba(58,35,20,.45)}
+.item:first-child{border-top:0}
+.item input[type=checkbox]{width:20px;height:20px;accent-color:var(--brown);margin-top:6px}
+.nm{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px}
+.name{font-size:23px;font-weight:800;margin-right:4px}
+.ib{background:none;border:0;padding:5px;border-radius:6px;color:var(--brown);cursor:pointer;display:flex;opacity:.75}
+.ib:hover{opacity:1;background:rgba(58,35,20,.1)}.ib.del:hover{color:var(--red)}
+svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.det,.calc{opacity:.75;font-size:16px}
+.badge{font-size:14px;border:1px solid var(--psave);color:var(--psave);border-radius:4px;padding:0 6px}
+.tot{font-size:23px;font-weight:800;text-align:right;white-space:nowrap}
+.old{display:block;font-size:14px;opacity:.6;text-decoration:line-through;font-weight:600}
+.item.done .name,.item.done .tot{text-decoration:line-through;opacity:.55}
+.empty{padding:26px 0;opacity:.75}
+.addrow{display:flex;justify-content:flex-end;margin-top:10px}
+.plus{width:54px;height:54px;border-radius:50%;background:var(--brown);color:#f4ecd8;border:0;cursor:pointer;display:grid;place-items:center}
+.plus svg{width:26px;height:26px;stroke-width:2.6}
+.rule{border-top:2px dashed var(--brown);margin:20px 0 14px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:5px 0;font-size:19px}
+.bd{display:flex;gap:6px;margin-left:auto}
+.bd input,.bd select{background:rgba(255,255,255,.35);border:2px solid var(--brown);border-radius:6px;padding:4px 8px;font:800 17px var(--doto);color:var(--brown);width:88px}
+.bd select{width:60px}
+.grand{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;font-size:26px;font-weight:800}
+.grand span:last-child{font-size:clamp(40px,9vw,60px)}
+.saved{text-align:right;color:var(--psave);font-weight:800;min-height:28px}
+dialog{border:0;padding:24px;border-radius:14px;width:min(640px,94vw);max-height:90vh;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;box-shadow:0 30px 80px rgba(40,20,8,.5)}
+dialog::backdrop{background:rgba(58,35,20,.5);backdrop-filter:blur(3px)}
+dialog[open]{animation:pop .18s ease-out}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.98)}}
+dialog h2{font:800 22px var(--doto);margin:0 0 16px}
+dialog label{display:block;font-size:13px;color:var(--mute);margin-bottom:4px}
+dialog input,dialog select{background:var(--field);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%;min-width:0}
+dialog input.bad{border-color:var(--err);outline-color:var(--err)}
+.form{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.f-name,.f-det{grid-column:span 3}.f-qty,.f-unit,.f-price{grid-column:span 2}.f-disc{grid-column:1/-1;display:flex;gap:6px}.f-disc>div:first-child{flex:1}.f-disc select{width:70px}
+.hint{color:var(--err);font-size:13px;min-height:20px;margin:8px 0}
+.btns{display:flex;justify-content:flex-end;gap:10px}
+.btn{background:var(--acc);color:var(--acc-ink);border:0;border-radius:6px;padding:9px 18px;font-weight:600;cursor:pointer}
+.ghost{background:none;border:1px solid var(--line);border-radius:6px;padding:9px 16px;cursor:pointer;color:var(--mute)}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--brown);color:#f4ecd8;padding:10px 16px;border-radius:8px;display:flex;gap:14px;align-items:center;opacity:0;pointer-events:none;transition:.2s}
+#toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#toast button{background:none;border:0;color:inherit;font:800 17px var(--doto);text-decoration:underline;cursor:pointer}
+*{-webkit-tap-highlight-color:transparent}
+button{touch-action:manipulation}
+#mbar{display:none}
+@media (pointer:coarse){.ib{padding:11px}.ib svg{width:22px;height:22px}.plus{width:62px;height:62px}.link{padding:10px 4px}.item input[type=checkbox]{width:24px;height:24px}dialog input,dialog select{font-size:16px;min-height:44px}.btn,.ghost{min-height:44px}.bd input,.bd select{min-height:44px}}
+@media (max-width:560px){.page{padding:24px 16px 120px}.f-name,.f-det{grid-column:1/-1}.f-qty,.f-unit{grid-column:span 3}.f-price{grid-column:1/-1}.item{grid-template-columns:28px 1fr;gap:10px}.tot{grid-column:2;text-align:left}.name{font-size:21px}.bdrow{flex-wrap:wrap}dialog{padding:18px}
+#mbar{display:flex;position:fixed;left:0;right:0;bottom:0;justify-content:space-between;align-items:baseline;padding:10px 18px calc(10px + env(safe-area-inset-bottom,0px));background:var(--brown);color:#f4ecd8;font:800 20px var(--doto);z-index:5}#mbar span:last-child{font-size:28px}#toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}dialog[open]{animation:none}}
+</style>
+</head>
+<body>
+<div class="page">
+<header><h1>Market Tracker</h1><button class="link" id="clear">Clear all</button></header>
+<div id="list"></div>
+<div class="addrow"><button class="plus" id="add" aria-label="Add item" title="Add item"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
+<div class="rule"></div>
+<div class="row"><span>Subtotal</span><span id="sSub"></span></div>
+<div class="row"><span>Item discounts</span><span id="sItem"></span></div>
+<div class="row bdrow"><label for="billV">Bill discount</label><span class="bd"><input id="billV" type="number" min="0" step="any" placeholder="0"><select id="billT" aria-label="Bill discount type"><option value="pct">%</option><option value="fix">₹</option></select></span><span id="sBill"></span></div>
+<div class="grand"><span>Total</span><span id="sTotal"></span></div>
+<div class="saved" id="sSaved"></div>
+</div>
+<dialog id="dlg" aria-labelledby="dt"><form id="f" autocomplete="off"><h2 id="dt"></h2><div class="form" id="fields"></div><p class="hint" id="hint"></p><div class="btns"><button type="button" class="ghost" id="cancel">Cancel</button><button class="btn" type="submit" id="go"></button></div></form></dialog>
+<div id="mbar"><span>Total</span><span id="mTotal"></span></div>
+<div id="toast" role="status"><span id="toastMsg"></span><button id="undo">Undo</button></div>
+<script>
+const CUR='₹',UNITS=['pcs','kg','g','L','ml','dozen','pack'],KEY='market-tracker-v1';
+let items=[],bill={t:'pct',v:''},editing=null,snap=null,tt;
+try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d){items=d.items||[];bill=d.bill||bill}}catch(e){}
+const $=id=>document.getElementById(id);
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify({items,bill}))}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>CUR+(Math.round(n*100)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=v=>{const n=parseFloat(v);return isFinite(n)?n:0};
+const PEN='<svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+const BIN='<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg>';
+function calc(it){const line=it.qty*it.price;let d=it.dt==='pct'?line*it.dv/100:it.dv;d=Math.min(Math.max(d,0),line);return{line,d,net:line-d}}
+function formHTML(p){p=p||{name:'',details:'',qty:1,unit:'pcs',price:'',dt:'pct',dv:''};
+return`<div class="f-name"><label for="fn">Name</label><input id="fn" value="${esc(p.name)}"></div>
+<div class="f-det"><label for="fd">Details</label><input id="fd" value="${esc(p.details)}" placeholder="Brand, notes"></div>
+<div class="f-qty"><label for="fq">Quantity</label><input id="fq" type="number" min="0" step="any" value="${p.qty}"></div>
+<div class="f-unit"><label for="fu">Unit</label><select id="fu">${UNITS.map(u=>`<option${u===p.unit?' selected':''}>${u}</option>`).join('')}</select></div>
+<div class="f-price"><label for="fp">Unit price (${CUR})</label><input id="fp" type="number" min="0" step="any" value="${p.price}"></div>
+<div class="f-disc"><div><label for="fdv">Discount</label><input id="fdv" type="number" min="0" step="any" value="${p.dv}" placeholder="0"></div><div><label for="fdt">Type</label><select id="fdt"><option value="pct"${p.dt==='pct'?' selected':''}>%</option><option value="fix"${p.dt==='fix'?' selected':''}>${CUR}</option></select></div></div>`}
+function readForm(){const g=s=>$('f'+s);$('fields').querySelectorAll('.bad').forEach(e=>e.classList.remove('bad'));
+const o={name:g('n').value.trim(),details:g('d').value.trim(),qty:num(g('q').value),unit:g('u').value,price:num(g('p').value),dt:g('dt').value,dv:num(g('dv').value)};
+let err='';const bad=(s,m)=>{g(s).classList.add('bad');err=err||m};
+if(!o.name)bad('n','Enter an item name.');
+if(!(o.qty>0))bad('q','Quantity must be more than 0.');
+if(o.price<0||g('p').value==='')bad('p','Enter a price of 0 or more.');
+if(o.dv<0)bad('dv','Discount can\'t be negative.');
+else if(o.dt==='pct'&&o.dv>100)bad('dv','A percentage discount can\'t exceed 100.');
+else if(o.dt==='fix'&&o.dv>o.qty*o.price)bad('dv','Discount is larger than the item total.');
+return{o,err}}
+const dlg=$('dlg');
+function openForm(id){editing=id;const it=items.find(i=>i.id===id);$('dt').textContent=it?'Edit item':'Add item';$('go').textContent=it?'Save changes':'Add item';$('fields').innerHTML=formHTML(it);$('hint').textContent='';dlg.showModal();$('fn').focus()}
+$('f').addEventListener('submit',e=>{e.preventDefault();const{o,err}=readForm();$('hint').textContent=err;if(err)return;
+if(editing){Object.assign(items.find(i=>i.id===editing),o)}else items.push({id:Date.now()+Math.random(),bought:false,...o});
+save();render();dlg.close();if(!editing)$('add').scrollIntoView({block:'nearest'})});
+$('add').onclick=()=>openForm(null);$('cancel').onclick=()=>dlg.close();
+dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close()});
+function render(){
+$('list').innerHTML=!items.length?'<div class="empty">Nothing here yet. Select + to add your first item.</div>':items.map(it=>{const c=calc(it);
+return`<div class="item${it.bought?' done':''}"><input type="checkbox" data-a="buy" data-id="${it.id}" ${it.bought?'checked':''} aria-label="Mark ${esc(it.name)} as bought">
+<div><div class="nm"><span class="name">${esc(it.name)}</span>${c.d>0?`<span class="badge">−${money(c.d)}</span>`:''}<button class="ib" data-a="edit" data-id="${it.id}" aria-label="Edit ${esc(it.name)}" title="Edit">${PEN}</button><button class="ib del" data-a="del" data-id="${it.id}" aria-label="Delete ${esc(it.name)}" title="Delete">${BIN}</button></div>${it.details?`<div class="det">${esc(it.details)}</div>`:''}<div class="calc">${+it.qty} ${esc(it.unit)} × ${money(it.price)}</div></div>
+<div class="tot">${c.d>0?`<span class="old">${money(c.line)}</span>`:''}${money(c.net)}</div></div>`}).join('');
+summary()}
+function summary(){let sub=0,disc=0;items.forEach(i=>{const c=calc(i);sub+=c.net;disc+=c.d});
+const bv=num(bill.v);let bd=bill.t==='pct'?sub*bv/100:bv;bd=Math.min(Math.max(bd,0),sub);
+$('sSub').textContent=money(sub+disc);$('sItem').textContent=disc>0?'−'+money(disc):money(0);$('sBill').textContent=bd>0?'−'+money(bd):money(0);
+$('sTotal').textContent=money(sub-bd);$('mTotal').textContent=money(sub-bd);$('sSaved').textContent=disc+bd>0?`You saved ${money(disc+bd)}`:''}
+function remember(msg){snap=JSON.stringify(items);$('toastMsg').textContent=msg;$('toast').classList.add('on');clearTimeout(tt);tt=setTimeout(()=>$('toast').classList.remove('on'),6000)}
+$('undo').onclick=()=>{if(snap){items=JSON.parse(snap);snap=null;save();render()}$('toast').classList.remove('on')};
+$('list').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,id=parseFloat(b.dataset.id),it=items.find(i=>i.id===id);
+if(a==='del'){remember(`Deleted ${it.name}`);items=items.filter(i=>i.id!==id);save();render()}
+else if(a==='edit')openForm(id);
+else if(a==='buy'){it.bought=b.checked;save();render()}});
+$('clear').onclick=()=>{if(!items.length)return;remember('Cleared all items');items=[];save();render()};
+$('billV').value=bill.v;$('billT').value=bill.t;
+$('billV').oninput=e=>{bill.v=e.target.value;save();summary()};
+$('billT').onchange=e=>{bill.t=e.target.value;save();summary()};
+render();
+</script>
+</body>
+</html>
