@@ -3,13 +3,32 @@
 A simple market and shopping list tracker. Add items with a quantity, price and discount, and the total is worked out for you. It comes in two versions that share the same design: a **Python desktop app** and a **mobile-friendly web page**.
 
 The look is a crumpled off-white paper with dark brown text in the [Doto](https://fonts.google.com/specimen/Doto) font. Prices are in rupees (₹).
+## Screenshots
+
+### Desktop
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/5c81d946-9b5b-44ee-ae48-b95cf4f42e76" alt="Market Tracker on desktop, main screen" width="800">
+</p>
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/be054fa8-598d-4ac1-88ba-779ce71019d7" alt="Market Tracker on desktop, second screen" width="800">
+</p>
+
+### Mobile
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/1b58d702-2357-43d8-a871-fba0f13e9090" alt="Market Tracker on mobile, main screen" width="240">
+  &nbsp;&nbsp;
+  <img src="https://github.com/user-attachments/assets/c01c568d-9717-44f8-8bfb-a0a05c7136f4" alt="Market Tracker on mobile, second screen" width="240">
+</p>
+
 
 ## Try it on your phone
 
 Scan the QR code to open the web version:
 
 <p align="center">
-  <img width="410" height="410" alt="QR-031026-19-13" src="https://github.com/user-attachments/assets/8c7c04ea-d4bb-4ba3-9dd2-6cc69a017255" />
+  <img width="200" height="200" alt="QR-031026-19-13" src="https://github.com/user-attachments/assets/ed758b14-ae3f-489f-ae3a-baab0f3f3b77" />
 </p>
 
 Or open it directly: **https://superguine.github.io/Market_Tracker/**
@@ -79,8 +98,6 @@ The web version is laid out for phones too: larger touch targets, and a bar at t
 ```
 Market_Tracker/
 ├── market_tracker.py      # Python (Tkinter) desktop app
-├── market-tracker.html    # Web version (HTML, CSS and JavaScript in one file)
-├── assets/
-│   └── qr-code.png        # QR code for the web page
+├── index.html    # Web version (HTML, CSS and JavaScript in one file)
 └── README.md
 ```
