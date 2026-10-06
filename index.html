@@ -68,11 +68,26 @@ button{touch-action:manipulation}
 @media (max-width:560px){.page{padding:24px 16px 120px}.f-name,.f-det{grid-column:1/-1}.f-qty,.f-unit{grid-column:span 3}.f-price{grid-column:1/-1}.item{grid-template-columns:28px 1fr;gap:10px}.tot{grid-column:2;text-align:left}.name{font-size:21px}.bdrow{flex-wrap:wrap}dialog{padding:18px}
 #mbar{display:flex;position:fixed;left:0;right:0;bottom:0;justify-content:space-between;align-items:baseline;padding:10px 18px calc(10px + env(safe-area-inset-bottom,0px));background:var(--brown);color:#f4ecd8;font:800 20px var(--doto);z-index:5}#mbar span:last-child{font-size:28px}#toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
 @media (prefers-reduced-motion:reduce){#toast{transition:none}dialog[open]{animation:none}}
+.hr{display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+header{flex-wrap:wrap}
+#who{font-size:15px;opacity:.75;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.auth{max-width:440px}
+.auth p{margin:10px 0 22px;opacity:.8}
+.auth label{display:block;font-size:15px;margin:12px 0 4px}
+.auth input{width:100%;background:rgba(255,255,255,.4);border:2px solid var(--brown);border-radius:6px;padding:10px 12px;font:800 18px var(--doto);color:var(--brown)}
+.acts2{display:flex;gap:18px;align-items:center;margin-top:22px;flex-wrap:wrap}
+.pbtn{background:var(--brown);color:#f4ecd8;border:0;border-radius:6px;padding:12px 26px;font:800 20px var(--doto);cursor:pointer}
+#amsg{min-height:48px;margin-top:14px;font-size:16px}
+#amsg.err{color:var(--red)}
+body:not(.in) #mbar{display:none}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<div class="page">
-<header><h1>Market Tracker</h1><button class="link" id="clear">Clear all</button></header>
+<div class="page" id="boot">Loading…</div>
+<div class="page auth" id="authView" hidden><h1>Market Tracker</h1><p>Log in to keep your list in the cloud, on every device.</p><form id="authForm"><label for="em">Email</label><input id="em" type="email" autocomplete="email" required><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" minlength="6" required><div class="acts2"><button class="pbtn" type="submit">Log in</button><button class="link" type="button" id="signup">Create account</button></div><div id="amsg" role="status"></div></form></div>
+<div class="page" id="app" hidden>
+<header><h1>Market Tracker</h1><div class="hr"><span id="who"></span><button class="link" id="logout">Log out</button><button class="link" id="clear">Clear all</button></div></header>
 <div id="list"></div>
 <div class="addrow"><button class="plus" id="add" aria-label="Add item" title="Add item"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
 <div class="rule"></div>
@@ -86,11 +101,15 @@ button{touch-action:manipulation}
 <div id="mbar"><span>Total</span><span id="mTotal"></span></div>
 <div id="toast" role="status"><span id="toastMsg"></span><button id="undo">Undo</button></div>
 <script>
-const CUR='₹',UNITS=['pcs','kg','g','L','ml','dozen','pack'],KEY='market-tracker-v1';
-let items=[],bill={t:'pct',v:''},editing=null,snap=null,tt;
-try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d){items=d.items||[];bill=d.bill||bill}}catch(e){}
+const SB_URL='https://qyytskjlycyfymsjogqc.supabase.co',SB_KEY='sb_publishable_Rx_X89TBIXA7ep6Kv97UQQ_Z59eKfdQ';
+const CUR='₹',UNITS=['pcs','kg','g','L','ml','dozen','pack'],LOCAL_KEY='market-tracker-v1';
+let items=[],bill={t:'pct',v:''},editing=null,snap=null,tt,user=null,billTimer;
 const $=id=>document.getElementById(id);
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify({items,bill}))}catch(e){}};
+if(!window.supabase){$('boot').textContent='Could not load the login library. Check your internet connection and reload.';throw new Error('supabase library missing')}
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+const fromRow=r=>({id:r.id,name:r.name,details:r.details,qty:+r.qty,unit:r.unit,price:+r.price,dt:r.discount_type,dv:+r.discount_value,bought:r.bought,at:r.created_at});
+const toRow=(i,full)=>({name:i.name,details:i.details,qty:i.qty,unit:i.unit,price:i.price,discount_type:i.dt,discount_value:i.dv,bought:!!i.bought,...(full?{id:i.id,created_at:i.at}:{})});
+const fail=e=>{console.error(e);toast('Could not save. Check your connection and try again.',false)};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=n=>CUR+(Math.round(n*100)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 const num=v=>{const n=parseFloat(v);return isFinite(n)?n:0};
@@ -116,9 +135,11 @@ else if(o.dt==='fix'&&o.dv>o.qty*o.price)bad('dv','Discount is larger than the i
 return{o,err}}
 const dlg=$('dlg');
 function openForm(id){editing=id;const it=items.find(i=>i.id===id);$('dt').textContent=it?'Edit item':'Add item';$('go').textContent=it?'Save changes':'Add item';$('fields').innerHTML=formHTML(it);$('hint').textContent='';dlg.showModal();$('fn').focus()}
-$('f').addEventListener('submit',e=>{e.preventDefault();const{o,err}=readForm();$('hint').textContent=err;if(err)return;
-if(editing){Object.assign(items.find(i=>i.id===editing),o)}else items.push({id:Date.now()+Math.random(),bought:false,...o});
-save();render();dlg.close();if(!editing)$('add').scrollIntoView({block:'nearest'})});
+$('f').addEventListener('submit',async e=>{e.preventDefault();const{o,err}=readForm();$('hint').textContent=err;if(err)return;
+$('go').disabled=true;const was=editing;
+if(was){const it=items.find(i=>i.id===was);Object.assign(it,o);const{error}=await sb.from('items').update(toRow(it)).eq('id',was);if(error)fail(error)}
+else{const{data,error}=await sb.from('items').insert(toRow(o)).select().single();if(error)fail(error);else items.push(fromRow(data))}
+$('go').disabled=false;render();dlg.close();if(!was)$('add').scrollIntoView({block:'nearest'})});
 $('add').onclick=()=>openForm(null);$('cancel').onclick=()=>dlg.close();
 dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close()});
 function render(){
@@ -131,17 +152,39 @@ function summary(){let sub=0,disc=0;items.forEach(i=>{const c=calc(i);sub+=c.net
 const bv=num(bill.v);let bd=bill.t==='pct'?sub*bv/100:bv;bd=Math.min(Math.max(bd,0),sub);
 $('sSub').textContent=money(sub+disc);$('sItem').textContent=disc>0?'−'+money(disc):money(0);$('sBill').textContent=bd>0?'−'+money(bd):money(0);
 $('sTotal').textContent=money(sub-bd);$('mTotal').textContent=money(sub-bd);$('sSaved').textContent=disc+bd>0?`You saved ${money(disc+bd)}`:''}
-function remember(msg){snap=JSON.stringify(items);$('toastMsg').textContent=msg;$('toast').classList.add('on');clearTimeout(tt);tt=setTimeout(()=>$('toast').classList.remove('on'),6000)}
-$('undo').onclick=()=>{if(snap){items=JSON.parse(snap);snap=null;save();render()}$('toast').classList.remove('on')};
-$('list').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,id=parseFloat(b.dataset.id),it=items.find(i=>i.id===id);
-if(a==='del'){remember(`Deleted ${it.name}`);items=items.filter(i=>i.id!==id);save();render()}
+function toast(msg,undo){$('toastMsg').textContent=msg;$('undo').style.display=undo?'':'none';$('toast').classList.add('on');clearTimeout(tt);tt=setTimeout(()=>$('toast').classList.remove('on'),6000)}
+function remember(msg){snap=JSON.stringify(items);toast(msg,true)}
+$('undo').onclick=async()=>{$('toast').classList.remove('on');if(!snap)return;const prev=JSON.parse(snap);snap=null;items=prev;render();
+if(prev.length){const{error}=await sb.from('items').upsert(prev.map(i=>toRow(i,true)));if(error)fail(error)}};
+$('list').addEventListener('click',async e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,id=b.dataset.id,it=items.find(i=>i.id===id);
+if(a==='del'){remember(`Deleted ${it.name}`);items=items.filter(i=>i.id!==id);render();const{error}=await sb.from('items').delete().eq('id',id);if(error)fail(error)}
 else if(a==='edit')openForm(id);
-else if(a==='buy'){it.bought=b.checked;save();render()}});
-$('clear').onclick=()=>{if(!items.length)return;remember('Cleared all items');items=[];save();render()};
-$('billV').value=bill.v;$('billT').value=bill.t;
-$('billV').oninput=e=>{bill.v=e.target.value;save();summary()};
-$('billT').onchange=e=>{bill.t=e.target.value;save();summary()};
-render();
+else if(a==='buy'){it.bought=b.checked;render();const{error}=await sb.from('items').update({bought:it.bought}).eq('id',id);if(error)fail(error)}});
+$('clear').onclick=async()=>{if(!items.length)return;remember('Cleared all items');items=[];render();const{error}=await sb.from('items').delete().eq('user_id',user.id);if(error)fail(error)};
+function saveBill(){clearTimeout(billTimer);billTimer=setTimeout(async()=>{const{error}=await sb.from('bill_settings').upsert({user_id:user.id,discount_type:bill.t,discount_value:Math.max(0,num(bill.v)||0)});if(error)fail(error)},600)}
+$('billV').oninput=e=>{bill.v=e.target.value;summary();saveBill()};
+$('billT').onchange=e=>{bill.t=e.target.value;summary();saveBill()};
+const show=v=>{['boot','authView','app'].forEach(k=>$(k).hidden=k!==v);document.body.classList.toggle('in',v==='app')};
+async function offerImport(){const mark='market-tracker-imported:'+user.id;let old=[];
+try{if(localStorage.getItem(mark))return;const d=JSON.parse(localStorage.getItem(LOCAL_KEY)||'null');old=(d&&d.items)||[]}catch(e){return}
+if(!old.length||items.length)return;
+if(!confirm(`Import the ${old.length} item(s) saved in this browser into your account?`)){try{localStorage.setItem(mark,'1')}catch(e){}return}
+const base=Date.now();const rows=old.map((o,i)=>({...toRow(o),created_at:new Date(base+i).toISOString()}));
+const{data,error}=await sb.from('items').insert(rows).select();if(error)return fail(error);
+items=data.map(fromRow).sort((x,y)=>x.at<y.at?-1:1);try{localStorage.setItem(mark,'1')}catch(e){}render()}
+async function enter(){$('who').textContent=user.email;show('app');$('list').innerHTML='<div class="empty">Loading…</div>';
+const[a,b]=await Promise.all([sb.from('items').select('*').order('created_at'),sb.from('bill_settings').select('*').maybeSingle()]);
+if(a.error){fail(a.error);items=[]}else items=a.data.map(fromRow);
+bill=b.data?{t:b.data.discount_type,v:String(+b.data.discount_value||'')}:{t:'pct',v:''};
+$('billV').value=bill.v;$('billT').value=bill.t;render();await offerImport()}
+const msg=(t,bad)=>{$('amsg').textContent=t;$('amsg').className=bad?'err':''};
+$('authForm').addEventListener('submit',async e=>{e.preventDefault();msg('Logging in…');const{error}=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(error)msg(error.message,true)});
+$('signup').onclick=async()=>{const email=$('em').value.trim(),password=$('pw').value;if(!email||password.length<6)return msg('Enter an email and a password of at least 6 characters.',true);
+msg('Creating account…');const{data,error}=await sb.auth.signUp({email,password});if(error)return msg(error.message,true);if(!data.session)msg('Account created. Check your email to confirm it, then log in.')};
+$('logout').onclick=()=>sb.auth.signOut();
+sb.auth.onAuthStateChange((ev,session)=>{
+if(session&&session.user){if(!user||user.id!==session.user.id){user=session.user;setTimeout(enter,0)}}
+else{user=null;items=[];$('pw').value='';msg('');show('authView')}});
 </script>
 </body>
 </html>
